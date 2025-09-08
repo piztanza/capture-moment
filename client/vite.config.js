@@ -12,7 +12,7 @@ export default defineConfig({
       manifest: {
         name: 'Sport Moment Kiosk',
         short_name: 'Sport Moment',
-        description: 'Kiosk app for capturing sport moments.',
+        description: 'Desktop kiosk app for capturing sport moments.',
         theme_color: '#ffffff',
         background_color: '#ffffff',
         display: 'fullscreen',
@@ -43,12 +43,22 @@ export default defineConfig({
       }
     })
   ],
+  base: './', // Important for Electron
   server: {
     port: 3000,
     proxy: {
       '/api': {
         target: 'http://localhost:3001',
         changeOrigin: true
+      }
+    }
+  },
+  build: {
+    outDir: 'dist',
+    assetsDir: 'assets',
+    rollupOptions: {
+      output: {
+        manualChunks: undefined
       }
     }
   }
