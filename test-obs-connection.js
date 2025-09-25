@@ -2,7 +2,7 @@ const WebSocket = require('ws');
 
 // Test OBS WebSocket connection
 async function testOBSConnection() {
-  const url = 'ws://192.168.1.9:4455';
+  const url = 'ws://192.168.1.5:4455';
   const password = 'pHZSML4D00NHdL8d';
   
   console.log('Testing OBS WebSocket connection...');

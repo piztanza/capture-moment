@@ -14,7 +14,7 @@ class OBSWebSocketClient {
     this.connectionPromise = null; // Track ongoing connection attempts
     
     // OBS WebSocket configuration
-    this.url = process.env.OBS_WEBSOCKET_URL || 'ws://192.168.1.9:4455';
+    this.url = process.env.OBS_WEBSOCKET_URL || 'ws://192.168.1.5:4455';
     this.password = process.env.OBS_WEBSOCKET_PASSWORD || 'pHZSML4D00NHdL8d';
   }
 

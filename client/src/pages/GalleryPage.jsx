@@ -228,9 +228,6 @@ const GalleryPage = () => {
       {sessionInfo && (
         <div>
           <p><strong>Session:</strong> {sessionInfo.session_name}</p>
-          <p style={{ fontSize: '14px', color: '#666', fontFamily: 'monospace' }}>
-            📁 {sessionInfo.folder_path}
-          </p>
         </div>
       )}
       
@@ -256,12 +253,6 @@ const GalleryPage = () => {
           {sessionInfo ? (
             <div>
               <p>No video files found in session folder yet</p>
-              <p style={{ fontSize: '14px', color: '#666', fontFamily: 'monospace' }}>
-                📁 {sessionInfo.folder_path}
-              </p>
-              <p style={{ fontSize: '14px', color: '#666', marginTop: '10px' }}>
-                Replay buffers will be saved here when you capture them during the session.
-              </p>
             </div>
           ) : (
             <div>
@@ -271,9 +262,6 @@ const GalleryPage = () => {
               </p>
             </div>
           )}
-          <p style={{ fontSize: '14px', color: '#666' }}>
-            Supported formats: MP4, AVI, MOV, MKV, WebM, WMV, FLV, M4V
-          </p>
         </div>
       ) : (
         <div className="gallery-grid">

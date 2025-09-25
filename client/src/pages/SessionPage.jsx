@@ -278,7 +278,7 @@ const SessionPage = () => {
         <p><strong>Session Duration:</strong> {sessionData.duration_minutes} minutes</p>
         <p><strong>Started:</strong> {new Date(sessionData.start_time).toLocaleString()}</p>
         <p>
-          <strong>OBS Status:</strong> 
+          <strong>Camera Status:</strong> 
           <span style={{ 
             color: sessionData.obs_connected ? '#4CAF50' : '#f44336',
             fontWeight: 'bold',
@@ -288,21 +288,7 @@ const SessionPage = () => {
           </span>
         </p>
         
-        {sessionData.session_folder_path && (
-          <p>
-            <strong>📁 Replay Folder:</strong> 
-            <span style={{ 
-              fontFamily: 'monospace',
-              fontSize: '12px',
-              backgroundColor: '#f5f5f5',
-              padding: '2px 6px',
-              borderRadius: '3px',
-              marginLeft: '5px'
-            }}>
-              {sessionData.session_folder_path}
-            </span>
-          </p>
-        )}
+
         
         {!sessionData.obs_connected && (
           <div style={{ 
@@ -352,7 +338,7 @@ const SessionPage = () => {
       </div>
       
       <div style={{ marginTop: '30px', fontSize: '16px', color: '#666' }}>
-        <p>💡 Press "Take Replay" button or <strong>F9 key</strong> to capture a moment during your session</p>
+        <p>💡 Press "Take Replay" button to capture a moment during your session</p>
         <p>📱 Use "View Gallery" to see and download your captures</p>
       </div>
       

@@ -25,13 +25,7 @@ const SessionNamePage = () => {
 
     // Simulate progress updates
     const progressSteps = [
-      'Creating session...',
-      'Setting up session folder...',
-      'Connecting to OBS Studio...',
-      'Configuring recording directory...',
-      'Setting up replay buffer...',
-      'Finalizing setup...',
-      'Session created successfully!'
+      'Creating session...'
     ]
 
     const progressInterval = setInterval(() => {
@@ -120,31 +114,7 @@ const SessionNamePage = () => {
             {setupProgress || 'Preparing session...'}
           </h3>
           
-          <div style={{ 
-            fontSize: '14px', 
-            color: '#666', 
-            lineHeight: '1.8',
-            maxWidth: '400px',
-            margin: '0 auto'
-          }}>
-            {[
-              { icon: '🔄', text: 'Creating session folder' },
-              { icon: '🔗', text: 'Connecting to OBS Studio' },
-              { icon: '📁', text: 'Setting up recording directory' },
-              { icon: '🎬', text: 'Configuring replay buffer' },
-              { icon: '✅', text: 'Finalizing setup...' }
-            ].map((step, index) => (
-              <p key={index} style={{ 
-                margin: '8px 0',
-                opacity: index <= currentStep ? 1 : 0.4,
-                color: index <= currentStep ? '#333' : '#999',
-                fontWeight: index === currentStep ? '600' : '400'
-              }}>
-                {step.icon} {step.text}
-                {index < currentStep && <span style={{ marginLeft: '10px', color: '#4CAF50' }}>✓</span>}
-              </p>
-            ))}
-          </div>
+
         </div>
         
         <style>{`
