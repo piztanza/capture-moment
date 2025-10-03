@@ -41,7 +41,7 @@ const PaymentPage = () => {
           // Find the session ID from the payment data
           // In a real app, you'd get this from the payment response
           const sessionId = paymentData.sessionId || '1' // Mock session ID
-          navigate(`/start-session/${sessionId}`)
+          navigate(`/session-name/${sessionId}`)
         }
       } catch (err) {
         console.error('Error checking payment status:', err)

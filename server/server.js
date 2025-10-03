@@ -17,7 +17,7 @@ app.use(express.static('public'));
 
 // Configuration
 const REPLAY_DIRECTORY = process.env.REPLAY_DIRECTORY || 'C:/Replays';
-const VIDEOS_DIRECTORY = process.env.VIDEOS_DIRECTORY || 'C:/Users/msalm/Videos';
+const VIDEOS_DIRECTORY = process.env.VIDEOS_DIRECTORY || 'C:/Replays';
 
 // Ensure replay directory exists
 if (!fs.existsSync(REPLAY_DIRECTORY)) {
@@ -177,7 +177,7 @@ app.post('/api/create-payment', async (req, res) => {
       amount: price,
       duration,
       qrCode: qrCodeDataURL,
-      sessionId: session.id
+      sessionId: session.session_id
     });
 
   } catch (error) {
@@ -430,7 +430,7 @@ app.get('/api/session/:id', async (req, res) => {
       
       if (elapsedMinutes >= session.duration_minutes) {
         // Mark session as expired
-        await dbHelpers.updateSession(id, { status: 'expired' });
+        await dbHelpers.updateSession(session.id, { status: 'expired' });
         session.status = 'expired';
       }
     }
@@ -634,6 +634,30 @@ app.get('/api/video/:filename', async (req, res) => {
     if (!fs.existsSync(videoPath)) {
       console.log(`❌ Video not found: ${decodedFilename}`);
       return res.status(404).json({ error: 'Video not found', filename: decodedFilename });
+    }
+
+    // Path traversal protection
+    try {
+      const realVideoPath = fs.realpathSync(videoPath);
+      const realReplayDir = fs.realpathSync(REPLAY_DIRECTORY);
+      
+      // Check if VIDEOS_DIRECTORY exists before getting its real path
+      let withinAllowedPaths = realVideoPath.startsWith(realReplayDir);
+      
+      if (fs.existsSync(VIDEOS_DIRECTORY)) {
+        const realVideosDir = fs.realpathSync(VIDEOS_DIRECTORY);
+        withinAllowedPaths = withinAllowedPaths || realVideoPath.startsWith(realVideosDir);
+      }
+      
+      if (!withinAllowedPaths) {
+        console.log(`❌ Path traversal attempt detected: ${decodedFilename}`);
+        console.log(`❌ Real path: ${realVideoPath}`);
+        console.log(`❌ Allowed paths: ${realReplayDir}, ${VIDEOS_DIRECTORY}`);
+        return res.status(403).json({ error: 'Access denied' });
+      }
+    } catch (pathError) {
+      console.log(`❌ Invalid path: ${decodedFilename}`, pathError.message);
+      return res.status(404).json({ error: 'Video not found' });
     }
 
     // Set appropriate headers for video streaming

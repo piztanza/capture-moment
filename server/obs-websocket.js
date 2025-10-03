@@ -14,8 +14,44 @@ class OBSWebSocketClient {
     this.connectionPromise = null; // Track ongoing connection attempts
     
     // OBS WebSocket configuration
-    this.url = process.env.OBS_WEBSOCKET_URL || 'ws://192.168.1.5:4455';
+    this.url = process.env.OBS_WEBSOCKET_URL || 'ws://localhost:4455';
     this.password = process.env.OBS_WEBSOCKET_PASSWORD || 'pHZSML4D00NHdL8d';
+  }
+
+  // Helper method to handle WebSocket requests with timeout and proper cleanup
+  sendRequest(request, timeoutMs = 10000, timeoutMessage = 'OBS WebSocket request timeout - check if OBS is running') {
+    return new Promise((resolve, reject) => {
+      const handleResponse = (message) => {
+        try {
+          const data = JSON.parse(message.toString());
+          console.log('Received response:', JSON.stringify(data, null, 2));
+          
+          if (data.op === 7 && data.d.requestId === request.d.requestId) {
+            clearTimeout(timeout);
+            this.ws.removeListener('message', handleResponse);
+            
+            if (data.d.requestStatus.code === 100) {
+              console.log(`Request ${request.d.requestType} successful`);
+              resolve(data.d.responseData || { success: true });
+            } else {
+              console.log(`Request ${request.d.requestType} failed:`, data.d.requestStatus.comment);
+              reject(new Error(data.d.requestStatus.comment || 'Unknown error'));
+            }
+          }
+        } catch (error) {
+          console.error('Error handling OBS response:', error);
+        }
+      };
+
+      const timeout = setTimeout(() => {
+        console.log('OBS WebSocket request timeout - no response received');
+        this.ws.removeListener('message', handleResponse);
+        reject(new Error(timeoutMessage));
+      }, timeoutMs);
+
+      this.ws.on('message', handleResponse);
+      this.send(request);
+    });
   }
 
   // Connect for a specific session
@@ -251,38 +287,15 @@ class OBSWebSocketClient {
 
     console.log('Sending SetRecordDirectory request:', JSON.stringify(setRecordDirRequest, null, 2));
 
-    return new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        console.log('OBS WebSocket request timeout - no response received');
-        reject(new Error('OBS WebSocket request timeout - check if OBS is running'));
-      }, 10000);
-
-      const handleResponse = (message) => {
-        try {
-          const data = JSON.parse(message.toString());
-          console.log('Received response:', JSON.stringify(data, null, 2));
-          
-          if (data.op === 7 && data.d.requestId === setRecordDirRequestId) {
-            clearTimeout(timeout);
-            this.ws.removeListener('message', handleResponse);
-            
-            if (data.d.requestStatus.code === 100) {
-              console.log('Recording directory set successfully to:', outputPath);
-              console.log('✅ Both recordings and replay buffers will now save to session folder');
-              resolve(data.d.responseData || { success: true });
-            } else {
-              console.log('Recording directory set failed:', data.d.requestStatus.comment);
-              reject(new Error(data.d.requestStatus.comment || 'Unknown error'));
-            }
-          }
-        } catch (error) {
-          console.error('Error handling OBS response:', error);
-        }
-      };
-
-      this.ws.on('message', handleResponse);
-      this.send(setRecordDirRequest);
-    });
+    try {
+      const result = await this.sendRequest(setRecordDirRequest);
+      console.log('Recording directory set successfully to:', outputPath);
+      console.log('✅ Both recordings and replay buffers will now save to session folder');
+      return result;
+    } catch (error) {
+      console.log('Recording directory set failed:', error.message);
+      throw error;
+    }
   }
 
   async getReplayBufferSettings() {
@@ -306,37 +319,14 @@ class OBSWebSocketClient {
 
     console.log('Sending GetReplayBufferSettings request:', JSON.stringify(request, null, 2));
 
-    return new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        console.log('OBS WebSocket request timeout - no response received');
-        reject(new Error('OBS WebSocket request timeout - check if OBS is running'));
-      }, 10000);
-
-      const handleResponse = (message) => {
-        try {
-          const data = JSON.parse(message.toString());
-          console.log('Received response:', JSON.stringify(data, null, 2));
-          
-          if (data.op === 7 && data.d.requestId === requestId) {
-            clearTimeout(timeout);
-            this.ws.removeListener('message', handleResponse);
-            
-            if (data.d.requestStatus.code === 100) {
-              console.log('Replay buffer settings retrieved successfully:', data.d.responseData);
-              resolve(data.d.responseData || {});
-            } else {
-              console.log('Replay buffer settings retrieval failed:', data.d.requestStatus.comment);
-              reject(new Error(data.d.requestStatus.comment || 'Unknown error'));
-            }
-          }
-        } catch (error) {
-          console.error('Error handling OBS response:', error);
-        }
-      };
-
-      this.ws.on('message', handleResponse);
-      this.send(request);
-    });
+    try {
+      const result = await this.sendRequest(request);
+      console.log('Replay buffer settings retrieved successfully:', result);
+      return result;
+    } catch (error) {
+      console.log('Replay buffer settings retrieval failed:', error.message);
+      throw error;
+    }
   }
 
   async getRecordingFolder() {
@@ -360,37 +350,14 @@ class OBSWebSocketClient {
 
     console.log('Sending GetRecordingFolder request:', JSON.stringify(request, null, 2));
 
-    return new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        console.log('OBS WebSocket request timeout - no response received');
-        reject(new Error('OBS WebSocket request timeout - check if OBS is running'));
-      }, 10000);
-
-      const handleResponse = (message) => {
-        try {
-          const data = JSON.parse(message.toString());
-          console.log('Received response:', JSON.stringify(data, null, 2));
-          
-          if (data.op === 7 && data.d.requestId === requestId) {
-            clearTimeout(timeout);
-            this.ws.removeListener('message', handleResponse);
-            
-            if (data.d.requestStatus.code === 100) {
-              console.log('Recording folder retrieved successfully:', data.d.responseData);
-              resolve(data.d.responseData || {});
-            } else {
-              console.log('Recording folder retrieval failed:', data.d.requestStatus.comment);
-              reject(new Error(data.d.requestStatus.comment || 'Unknown error'));
-            }
-          }
-        } catch (error) {
-          console.error('Error handling OBS response:', error);
-        }
-      };
-
-      this.ws.on('message', handleResponse);
-      this.send(request);
-    });
+    try {
+      const result = await this.sendRequest(request);
+      console.log('Recording folder retrieved successfully:', result);
+      return result;
+    } catch (error) {
+      console.log('Recording folder retrieval failed:', error.message);
+      throw error;
+    }
   }
 
   async startReplayBuffer() {
@@ -414,37 +381,14 @@ class OBSWebSocketClient {
 
     console.log('Sending StartReplayBuffer request:', JSON.stringify(request, null, 2));
 
-    return new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        console.log('OBS WebSocket request timeout - no response received');
-        reject(new Error('OBS WebSocket request timeout - check if OBS is running'));
-      }, 10000);
-
-      const handleResponse = (message) => {
-        try {
-          const data = JSON.parse(message.toString());
-          console.log('Received response:', JSON.stringify(data, null, 2));
-          
-          if (data.op === 7 && data.d.requestId === requestId) {
-            clearTimeout(timeout);
-            this.ws.removeListener('message', handleResponse);
-            
-            if (data.d.requestStatus.code === 100) {
-              console.log('Replay buffer started successfully');
-              resolve(data.d.responseData || { success: true });
-            } else {
-              console.log('Replay buffer start failed:', data.d.requestStatus.comment);
-              reject(new Error(data.d.requestStatus.comment || 'Unknown error'));
-            }
-          }
-        } catch (error) {
-          console.error('Error handling OBS response:', error);
-        }
-      };
-
-      this.ws.on('message', handleResponse);
-      this.send(request);
-    });
+    try {
+      const result = await this.sendRequest(request);
+      console.log('Replay buffer started successfully');
+      return result;
+    } catch (error) {
+      console.log('Replay buffer start failed:', error.message);
+      throw error;
+    }
   }
 
   async stopReplayBuffer() {
@@ -468,37 +412,14 @@ class OBSWebSocketClient {
 
     console.log('Sending StopReplayBuffer request:', JSON.stringify(request, null, 2));
 
-    return new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        console.log('OBS WebSocket request timeout - no response received');
-        reject(new Error('OBS WebSocket request timeout - check if OBS is running'));
-      }, 10000);
-
-      const handleResponse = (message) => {
-        try {
-          const data = JSON.parse(message.toString());
-          console.log('Received response:', JSON.stringify(data, null, 2));
-          
-          if (data.op === 7 && data.d.requestId === requestId) {
-            clearTimeout(timeout);
-            this.ws.removeListener('message', handleResponse);
-            
-            if (data.d.requestStatus.code === 100) {
-              console.log('Replay buffer stopped successfully');
-              resolve(data.d.responseData || { success: true });
-            } else {
-              console.log('Replay buffer stop failed:', data.d.requestStatus.comment);
-              reject(new Error(data.d.requestStatus.comment || 'Unknown error'));
-            }
-          }
-        } catch (error) {
-          console.error('Error handling OBS response:', error);
-        }
-      };
-
-      this.ws.on('message', handleResponse);
-      this.send(request);
-    });
+    try {
+      const result = await this.sendRequest(request);
+      console.log('Replay buffer stopped successfully');
+      return result;
+    } catch (error) {
+      console.log('Replay buffer stop failed:', error.message);
+      throw error;
+    }
   }
 
   async getReplayBufferStatus() {
@@ -522,37 +443,14 @@ class OBSWebSocketClient {
 
     console.log('Sending GetReplayBufferStatus request:', JSON.stringify(request, null, 2));
 
-    return new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        console.log('OBS WebSocket request timeout - no response received');
-        reject(new Error('OBS WebSocket request timeout - check if OBS is running'));
-      }, 10000);
-
-      const handleResponse = (message) => {
-        try {
-          const data = JSON.parse(message.toString());
-          console.log('Received response:', JSON.stringify(data, null, 2));
-          
-          if (data.op === 7 && data.d.requestId === requestId) {
-            clearTimeout(timeout);
-            this.ws.removeListener('message', handleResponse);
-            
-            if (data.d.requestStatus.code === 100) {
-              console.log('Replay buffer status retrieved successfully:', data.d.responseData);
-              resolve(data.d.responseData || {});
-            } else {
-              console.log('Replay buffer status retrieval failed:', data.d.requestStatus.comment);
-              reject(new Error(data.d.requestStatus.comment || 'Unknown error'));
-            }
-          }
-        } catch (error) {
-          console.error('Error handling OBS response:', error);
-        }
-      };
-
-      this.ws.on('message', handleResponse);
-      this.send(request);
-    });
+    try {
+      const result = await this.sendRequest(request);
+      console.log('Replay buffer status retrieved successfully:', result);
+      return result;
+    } catch (error) {
+      console.log('Replay buffer status retrieval failed:', error.message);
+      throw error;
+    }
   }
 
   async saveReplayBuffer() {
@@ -621,60 +519,31 @@ class OBSWebSocketClient {
 
     console.log('Sending SaveReplayBuffer request:', JSON.stringify(request, null, 2));
 
-    return new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        console.log('OBS WebSocket request timeout - no response received');
-        reject(new Error('OBS WebSocket request timeout - check if OBS is running and replay buffer is started'));
-      }, 15000); // Increased timeout to 15 seconds
+    // Add a small delay before sending to ensure connection is stable
+    await new Promise(resolve => setTimeout(resolve, 100));
 
-      const handleResponse = (message) => {
-        try {
-          const data = JSON.parse(message.toString());
-          console.log('Received response:', JSON.stringify(data, null, 2));
-          
-          if (data.op === 7 && data.d.requestId === requestId) {
-            clearTimeout(timeout);
-            this.ws.removeListener('message', handleResponse);
-            
-            if (data.d.requestStatus.code === 100) {
-              console.log('✅ Replay buffer saved successfully');
-              resolve(data.d.responseData || { 
-                success: true, 
-                savedAt: new Date().toISOString(),
-                sessionId: this.sessionId 
-              });
-            } else {
-              console.log('❌ Replay buffer save failed:', data.d.requestStatus.comment);
-              const errorMsg = data.d.requestStatus.comment || 'Unknown error';
-              
-              // Provide more specific error messages
-              if (errorMsg.includes('replay buffer')) {
-                reject(new Error(`Replay buffer error: ${errorMsg}. Make sure replay buffer is configured in OBS.`));
-              } else if (errorMsg.includes('not running')) {
-                reject(new Error(`OBS not running: ${errorMsg}`));
-              } else {
-                reject(new Error(`Save failed: ${errorMsg}`));
-              }
-            }
-          }
-        } catch (error) {
-          console.error('Error handling OBS response:', error);
-        }
+    try {
+      const result = await this.sendRequest(request, 15000, 'OBS WebSocket request timeout - check if OBS is running and replay buffer is started');
+      console.log('✅ Replay buffer saved successfully');
+      console.log('📤 SaveReplayBuffer request completed successfully');
+      return result || { 
+        success: true, 
+        savedAt: new Date().toISOString(),
+        sessionId: this.sessionId 
       };
-
-      // Add a small delay before sending to ensure connection is stable
-      setTimeout(() => {
-        try {
-          this.ws.on('message', handleResponse);
-          this.send(request);
-          console.log('📤 SaveReplayBuffer request sent successfully');
-        } catch (sendError) {
-          clearTimeout(timeout);
-          console.error('❌ Failed to send SaveReplayBuffer request:', sendError);
-          reject(new Error(`Failed to send request: ${sendError.message}`));
-        }
-      }, 100); // 100ms delay to ensure connection stability
-    });
+    } catch (error) {
+      console.log('❌ Replay buffer save failed:', error.message);
+      const errorMsg = error.message || 'Unknown error';
+      
+      // Provide more specific error messages
+      if (errorMsg.includes('replay buffer')) {
+        throw new Error(`Replay buffer error: ${errorMsg}. Make sure replay buffer is configured in OBS.`);
+      } else if (errorMsg.includes('not running')) {
+        throw new Error(`OBS not running: ${errorMsg}`);
+      } else {
+        throw new Error(`Save failed: ${errorMsg}`);
+      }
+    }
   }
 
   attemptReconnect() {
